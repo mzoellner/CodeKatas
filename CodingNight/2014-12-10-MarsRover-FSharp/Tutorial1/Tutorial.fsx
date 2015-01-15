@@ -54,32 +54,79 @@ module Rover =
         | South
         | West
 
+    type grid(sizeX:int, sizeY: int) = 
+        member this.sizeX = sizeX
+        member this.sizeY = sizeY
+
     type position(x:int, y:int, direction:Direction) =
         member this.x = x
         member this.y = y
         member this.direction = direction
 
-    let move(direction:Direction, command:Command) =
-        match command with
-            | Forward ->
-            match direction with
-                | North -> 1
-                | South -> -1
-                | n -> 0
+    let getForwardIncrementX(direction:Direction) =
+        match direction with
+            | East -> 1
+            | West -> -1
             | n -> 0
+
+    let getForwardIncrementY(direction:Direction) =
+        match direction with
+            | North -> 1
+            | South -> -1
+            | n -> 0
+
+    let moveX(direction:Direction, command:Command) =
+        match command with
+            | Forward -> getForwardIncrementX(direction)
+            | Backward -> -getForwardIncrementX(direction)
+            | n -> 0           
+
+    let moveY(direction:Direction, command:Command) =
+        match command with
+            | Forward -> getForwardIncrementY(direction)
+            | Backward -> -getForwardIncrementY(direction)
+            | n -> 0           
 
     let turn(direction:Direction, command:Command) =
         match command with
             | TurnLeft -> 
-            match direction with
-                | North -> West
-                | South -> East
-                | East -> North
-                | West -> South
+                match direction with
+                    | North -> West
+                    | South -> East
+                    | East -> North
+                    | West -> South
+            | TurnRight ->
+                match direction with 
+                    | North -> East
+                    | South -> West
+                    | East -> South
+                    | West -> North
             | n -> direction
 
-    let applyCommand(p:position, command:Command) =     
-        position(p.x + move(p.direction, command), p.y + move(p.direction, command), turn(p.direction, command))
+    let wrapAroundMaximum(p:position, grid:grid) =
+        position((p.x % grid.sizeX), (p.y % grid.sizeY), p.direction)
+
+    let wrapAroundZeroSingle(value:int, maxValue:int) =
+        if value < 0 then maxValue - 1
+        else value
+
+    let wrapAroundZero(p:position, grid:grid) = 
+        position(wrapAroundZeroSingle(p.x, grid.sizeX), wrapAroundZeroSingle(p.y, grid.sizeY), p.direction)
+
+    let wrap(p:position, grid:grid) =
+        wrapAroundZero(
+            wrapAroundMaximum(p, grid), grid)
+
+    let applyCommand(p:position, command:Command, grid:grid) =     
+        wrap(position(p.x + moveX(p.direction, command), p.y + moveY(p.direction, command), turn(p.direction, command)), grid)
+
+    let rec applyCommands(p:position, commands:Command list, grid:grid) = 
+        let folder p command = applyCommand(p, command, grid)
+        List.fold folder p commands
+//        if commands.IsEmpty then
+//            p
+//        else
+//            applyCommands(applyCommand(p, commands.Head, grid), commands.Tail, grid)
 
 
 
